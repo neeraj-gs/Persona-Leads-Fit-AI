@@ -47,11 +47,19 @@ import {
   Building2,
   User,
   Briefcase,
+  Search,
+  Crown,
+  Star,
+  Target,
+  X,
+  TrendingUp,
+  ThumbsUp,
+  ThumbsDown,
+  Sparkles,
 } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
@@ -93,6 +101,34 @@ export function LeadsTable({ data, isLoading }: LeadsTableProps) {
   const [globalFilter, setGlobalFilter] = useState('');
   const [selectedLead, setSelectedLead] = useState<LeadRanking | null>(null);
 
+  const getBuyerTypeIcon = (buyerType: string | null) => {
+    switch (buyerType) {
+      case 'decision_maker':
+        return <Crown className="h-3 w-3" />;
+      case 'champion':
+        return <Star className="h-3 w-3" />;
+      case 'influencer':
+        return <Target className="h-3 w-3" />;
+      default:
+        return null;
+    }
+  };
+
+  const getBuyerTypeStyles = (buyerType: string | null) => {
+    switch (buyerType) {
+      case 'decision_maker':
+        return 'bg-purple-100 text-purple-700 border-purple-200';
+      case 'champion':
+        return 'bg-green-100 text-green-700 border-green-200';
+      case 'influencer':
+        return 'bg-blue-100 text-blue-700 border-blue-200';
+      case 'not_relevant':
+        return 'bg-slate-100 text-slate-600 border-slate-200';
+      default:
+        return 'bg-secondary text-muted-foreground';
+    }
+  };
+
   const columns = useMemo<ColumnDef<LeadRanking>[]>(
     () => [
       {
@@ -101,21 +137,30 @@ export function LeadsTable({ data, isLoading }: LeadsTableProps) {
           <Button
             variant="ghost"
             onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-            className="px-0"
+            className="px-0 font-semibold"
           >
             Rank
-            <ArrowUpDown className="ml-2 h-4 w-4" />
+            <ArrowUpDown className="ml-1 h-3 w-3" />
           </Button>
         ),
         cell: ({ row }) => {
           const rank = row.getValue('companyRank') as number | null;
           const isRelevant = row.original.isRelevant;
+          if (rank === 1) {
+            return (
+              <div className="flex items-center justify-center w-8 h-8 rounded-full gradient-primary text-white font-bold text-sm">
+                1
+              </div>
+            );
+          }
           return rank ? (
-            <Badge variant={rank === 1 ? 'default' : 'secondary'}>#{rank}</Badge>
+            <div className="flex items-center justify-center w-8 h-8 rounded-full bg-secondary text-foreground font-semibold text-sm">
+              {rank}
+            </div>
           ) : (
-            <Badge variant="outline" className="text-muted-foreground">
+            <div className="flex items-center justify-center w-8 h-8 rounded-full bg-secondary/50 text-muted-foreground text-xs">
               {isRelevant ? '-' : 'N/A'}
-            </Badge>
+            </div>
           );
         },
       },
@@ -125,22 +170,31 @@ export function LeadsTable({ data, isLoading }: LeadsTableProps) {
           <Button
             variant="ghost"
             onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-            className="px-0"
+            className="px-0 font-semibold"
           >
             Score
-            <ArrowUpDown className="ml-2 h-4 w-4" />
+            <ArrowUpDown className="ml-1 h-3 w-3" />
           </Button>
         ),
         cell: ({ row }) => {
           const score = row.getValue('relevanceScore') as number;
-          const bgColor =
-            score >= 70 ? 'bg-green-100 text-green-800' :
-            score >= 40 ? 'bg-yellow-100 text-yellow-800' :
-            'bg-red-100 text-red-800';
+          const getScoreColor = () => {
+            if (score >= 70) return 'from-green-500 to-emerald-400';
+            if (score >= 40) return 'from-amber-500 to-yellow-400';
+            return 'from-red-500 to-orange-400';
+          };
           return (
-            <span className={`px-2 py-1 rounded-full text-xs font-medium ${bgColor}`}>
-              {score}
-            </span>
+            <div className="relative w-14">
+              <div className="h-2 rounded-full bg-secondary overflow-hidden">
+                <div
+                  className={`h-full rounded-full bg-gradient-to-r ${getScoreColor()}`}
+                  style={{ width: `${score}%` }}
+                />
+              </div>
+              <span className="absolute -top-5 left-1/2 -translate-x-1/2 text-xs font-bold">
+                {score}
+              </span>
+            </div>
           );
         },
       },
@@ -151,20 +205,28 @@ export function LeadsTable({ data, isLoading }: LeadsTableProps) {
           <Button
             variant="ghost"
             onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-            className="px-0"
+            className="px-0 font-semibold"
           >
-            <User className="mr-2 h-4 w-4" />
+            <User className="mr-1 h-3 w-3" />
             Name
-            <ArrowUpDown className="ml-2 h-4 w-4" />
+            <ArrowUpDown className="ml-1 h-3 w-3" />
           </Button>
         ),
         cell: ({ row }) => {
           const firstName = row.original.lead.leadFirstName || '';
           const lastName = row.original.lead.leadLastName || '';
+          const isRelevant = row.original.isRelevant;
           return (
-            <span className="font-medium">
-              {firstName} {lastName}
-            </span>
+            <div className="flex items-center gap-2">
+              <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-white text-sm font-bold ${
+                isRelevant ? 'gradient-primary' : 'bg-slate-300'
+              }`}>
+                {firstName.charAt(0)}{lastName.charAt(0)}
+              </div>
+              <span className={`font-medium ${!isRelevant ? 'text-muted-foreground' : ''}`}>
+                {firstName} {lastName}
+              </span>
+            </div>
           );
         },
       },
@@ -175,11 +237,11 @@ export function LeadsTable({ data, isLoading }: LeadsTableProps) {
           <Button
             variant="ghost"
             onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-            className="px-0"
+            className="px-0 font-semibold"
           >
-            <Briefcase className="mr-2 h-4 w-4" />
+            <Briefcase className="mr-1 h-3 w-3" />
             Title
-            <ArrowUpDown className="ml-2 h-4 w-4" />
+            <ArrowUpDown className="ml-1 h-3 w-3" />
           </Button>
         ),
         cell: ({ row }) => {
@@ -198,11 +260,11 @@ export function LeadsTable({ data, isLoading }: LeadsTableProps) {
           <Button
             variant="ghost"
             onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-            className="px-0"
+            className="px-0 font-semibold"
           >
-            <Building2 className="mr-2 h-4 w-4" />
+            <Building2 className="mr-1 h-3 w-3" />
             Company
-            <ArrowUpDown className="ml-2 h-4 w-4" />
+            <ArrowUpDown className="ml-1 h-3 w-3" />
           </Button>
         ),
         cell: ({ row }) => {
@@ -212,7 +274,9 @@ export function LeadsTable({ data, isLoading }: LeadsTableProps) {
             <div>
               <span className="font-medium">{company}</span>
               {size && (
-                <span className="text-xs text-muted-foreground ml-2">({size})</span>
+                <Badge variant="secondary" className="ml-2 text-xs font-normal">
+                  {size}
+                </Badge>
               )}
             </div>
           );
@@ -225,15 +289,9 @@ export function LeadsTable({ data, isLoading }: LeadsTableProps) {
           const buyerType = row.getValue('buyerType') as string | null;
           if (!buyerType) return <span className="text-muted-foreground">-</span>;
 
-          const variants: Record<string, 'default' | 'secondary' | 'outline' | 'destructive'> = {
-            decision_maker: 'default',
-            champion: 'secondary',
-            influencer: 'outline',
-            not_relevant: 'destructive',
-          };
-
           return (
-            <Badge variant={variants[buyerType] || 'outline'}>
+            <Badge className={`${getBuyerTypeStyles(buyerType)} border gap-1`}>
+              {getBuyerTypeIcon(buyerType)}
               {buyerType.replace('_', ' ')}
             </Badge>
           );
@@ -241,12 +299,18 @@ export function LeadsTable({ data, isLoading }: LeadsTableProps) {
       },
       {
         accessorKey: 'isRelevant',
-        header: 'Relevant',
+        header: 'Status',
         cell: ({ row }) => {
           const isRelevant = row.getValue('isRelevant') as boolean;
-          return (
-            <Badge variant={isRelevant ? 'default' : 'destructive'}>
-              {isRelevant ? 'Yes' : 'No'}
+          return isRelevant ? (
+            <Badge className="bg-green-100 text-green-700 border border-green-200">
+              <TrendingUp className="h-3 w-3 mr-1" />
+              Qualified
+            </Badge>
+          ) : (
+            <Badge variant="secondary" className="text-muted-foreground">
+              <X className="h-3 w-3 mr-1" />
+              Filtered
             </Badge>
           );
         },
@@ -256,19 +320,15 @@ export function LeadsTable({ data, isLoading }: LeadsTableProps) {
         cell: ({ row }) => {
           const lead = row.original;
           return (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="h-8 w-8 p-0">
-                  <MoreHorizontal className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => setSelectedLead(lead)}>
-                  <Eye className="mr-2 h-4 w-4" />
-                  View Details
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setSelectedLead(lead)}
+              className="h-8 px-2 hover:bg-primary/10 hover:text-primary"
+            >
+              <Eye className="h-4 w-4 mr-1" />
+              View
+            </Button>
           );
         },
       },
@@ -296,21 +356,25 @@ export function LeadsTable({ data, isLoading }: LeadsTableProps) {
 
   return (
     <>
-      <div className="space-y-4">
-        <div className="flex items-center justify-between gap-4">
-          <Input
-            placeholder="Search leads..."
-            value={globalFilter}
-            onChange={(e) => setGlobalFilter(e.target.value)}
-            className="max-w-sm"
-          />
-          <div className="flex items-center gap-2">
+      <div className="space-y-4 p-6">
+        {/* Search and Controls */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="relative w-full sm:w-80">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search leads..."
+              value={globalFilter}
+              onChange={(e) => setGlobalFilter(e.target.value)}
+              className="pl-10 bg-secondary/50 border-0 focus-visible:ring-2 focus-visible:ring-primary"
+            />
+          </div>
+          <div className="flex items-center gap-3">
             <span className="text-sm text-muted-foreground">Show:</span>
             <Select
               value={table.getState().pagination.pageSize.toString()}
               onValueChange={(value) => table.setPageSize(Number(value))}
             >
-              <SelectTrigger className="w-20">
+              <SelectTrigger className="w-20 bg-secondary/50 border-0">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -323,13 +387,14 @@ export function LeadsTable({ data, isLoading }: LeadsTableProps) {
           </div>
         </div>
 
-        <div className="rounded-md border">
+        {/* Table */}
+        <div className="rounded-xl border overflow-hidden">
           <Table>
             <TableHeader>
               {table.getHeaderGroups().map((headerGroup) => (
-                <TableRow key={headerGroup.id}>
+                <TableRow key={headerGroup.id} className="bg-secondary/30 hover:bg-secondary/30">
                   {headerGroup.headers.map((header) => (
-                    <TableHead key={header.id}>
+                    <TableHead key={header.id} className="text-xs uppercase tracking-wider">
                       {header.isPlaceholder
                         ? null
                         : flexRender(
@@ -344,18 +409,28 @@ export function LeadsTable({ data, isLoading }: LeadsTableProps) {
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={columns.length} className="h-24 text-center">
-                    Loading...
+                  <TableCell colSpan={columns.length} className="h-32">
+                    <div className="flex flex-col items-center justify-center gap-3">
+                      <div className="w-10 h-10 rounded-xl gradient-primary flex items-center justify-center animate-pulse">
+                        <Sparkles className="h-5 w-5 text-white" />
+                      </div>
+                      <span className="text-muted-foreground">Loading results...</span>
+                    </div>
                   </TableCell>
                 </TableRow>
               ) : table.getRowModel().rows?.length ? (
-                table.getRowModel().rows.map((row) => (
+                table.getRowModel().rows.map((row, idx) => (
                   <TableRow
                     key={row.id}
-                    data-state={row.getIsSelected() && 'selected'}
+                    className={`
+                      transition-colors hover:bg-secondary/30 cursor-pointer
+                      ${!row.original.isRelevant ? 'opacity-60' : ''}
+                    `}
+                    onClick={() => setSelectedLead(row.original)}
+                    style={{ animationDelay: `${idx * 50}ms` }}
                   >
                     {row.getVisibleCells().map((cell) => (
-                      <TableCell key={cell.id}>
+                      <TableCell key={cell.id} className="py-4">
                         {flexRender(
                           cell.column.columnDef.cell,
                           cell.getContext()
@@ -366,8 +441,13 @@ export function LeadsTable({ data, isLoading }: LeadsTableProps) {
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={columns.length} className="h-24 text-center">
-                    No results.
+                  <TableCell colSpan={columns.length} className="h-32">
+                    <div className="flex flex-col items-center justify-center gap-3">
+                      <div className="w-16 h-16 rounded-full bg-secondary/50 flex items-center justify-center">
+                        <User className="h-8 w-8 text-muted-foreground" />
+                      </div>
+                      <span className="text-muted-foreground">No results found</span>
+                    </div>
                   </TableCell>
                 </TableRow>
               )}
@@ -375,19 +455,31 @@ export function LeadsTable({ data, isLoading }: LeadsTableProps) {
           </Table>
         </div>
 
-        <div className="flex items-center justify-between">
+        {/* Pagination */}
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="text-sm text-muted-foreground">
-            Showing {table.getState().pagination.pageIndex * table.getState().pagination.pageSize + 1} to{' '}
-            {Math.min(
-              (table.getState().pagination.pageIndex + 1) * table.getState().pagination.pageSize,
-              table.getFilteredRowModel().rows.length
-            )}{' '}
-            of {table.getFilteredRowModel().rows.length} results
+            Showing{' '}
+            <span className="font-semibold text-foreground">
+              {table.getState().pagination.pageIndex * table.getState().pagination.pageSize + 1}
+            </span>
+            {' '}to{' '}
+            <span className="font-semibold text-foreground">
+              {Math.min(
+                (table.getState().pagination.pageIndex + 1) * table.getState().pagination.pageSize,
+                table.getFilteredRowModel().rows.length
+              )}
+            </span>
+            {' '}of{' '}
+            <span className="font-semibold text-foreground">
+              {table.getFilteredRowModel().rows.length}
+            </span>
+            {' '}results
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1">
             <Button
               variant="outline"
-              size="sm"
+              size="icon"
+              className="h-8 w-8"
               onClick={() => table.setPageIndex(0)}
               disabled={!table.getCanPreviousPage()}
             >
@@ -395,18 +487,43 @@ export function LeadsTable({ data, isLoading }: LeadsTableProps) {
             </Button>
             <Button
               variant="outline"
-              size="sm"
+              size="icon"
+              className="h-8 w-8"
               onClick={() => table.previousPage()}
               disabled={!table.getCanPreviousPage()}
             >
               <ChevronLeft className="h-4 w-4" />
             </Button>
-            <span className="text-sm">
-              Page {table.getState().pagination.pageIndex + 1} of {table.getPageCount()}
-            </span>
+            <div className="flex items-center gap-1 px-2">
+              {Array.from({ length: Math.min(5, table.getPageCount()) }, (_, i) => {
+                const pageIndex = table.getState().pagination.pageIndex;
+                let page = i;
+                if (table.getPageCount() > 5) {
+                  if (pageIndex < 3) {
+                    page = i;
+                  } else if (pageIndex > table.getPageCount() - 4) {
+                    page = table.getPageCount() - 5 + i;
+                  } else {
+                    page = pageIndex - 2 + i;
+                  }
+                }
+                return (
+                  <Button
+                    key={page}
+                    variant={pageIndex === page ? 'default' : 'outline'}
+                    size="icon"
+                    className={`h-8 w-8 ${pageIndex === page ? 'gradient-primary text-white' : ''}`}
+                    onClick={() => table.setPageIndex(page)}
+                  >
+                    {page + 1}
+                  </Button>
+                );
+              })}
+            </div>
             <Button
               variant="outline"
-              size="sm"
+              size="icon"
+              className="h-8 w-8"
               onClick={() => table.nextPage()}
               disabled={!table.getCanNextPage()}
             >
@@ -414,7 +531,8 @@ export function LeadsTable({ data, isLoading }: LeadsTableProps) {
             </Button>
             <Button
               variant="outline"
-              size="sm"
+              size="icon"
+              className="h-8 w-8"
               onClick={() => table.setPageIndex(table.getPageCount() - 1)}
               disabled={!table.getCanNextPage()}
             >
@@ -426,90 +544,118 @@ export function LeadsTable({ data, isLoading }: LeadsTableProps) {
 
       {/* Lead Details Dialog */}
       <Dialog open={!!selectedLead} onOpenChange={() => setSelectedLead(null)}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl glass-card">
           <DialogHeader>
-            <DialogTitle>Lead Details</DialogTitle>
-            <DialogDescription>
-              Detailed AI analysis for this lead
-            </DialogDescription>
-          </DialogHeader>
-          {selectedLead && (
-            <div className="space-y-6">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-sm font-medium text-muted-foreground">Name</label>
-                  <p className="text-lg font-semibold">
-                    {selectedLead.lead.leadFirstName} {selectedLead.lead.leadLastName}
-                  </p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-muted-foreground">Company</label>
-                  <p className="text-lg font-semibold">{selectedLead.lead.accountName}</p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-muted-foreground">Title</label>
-                  <p>{selectedLead.lead.leadJobTitle || '-'}</p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-muted-foreground">Company Size</label>
-                  <p>{selectedLead.lead.accountEmployeeRange || '-'}</p>
-                </div>
-              </div>
-
-              <div className="border-t pt-4">
-                <h4 className="font-semibold mb-3">AI Analysis</h4>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-sm font-medium text-muted-foreground">Score</label>
-                    <p className="text-2xl font-bold">{selectedLead.relevanceScore}/100</p>
+            <DialogTitle className="flex items-center gap-3">
+              {selectedLead && (
+                <>
+                  <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-white text-lg font-bold ${
+                    selectedLead.isRelevant ? 'gradient-primary' : 'bg-slate-400'
+                  }`}>
+                    {selectedLead.lead.leadFirstName?.charAt(0)}
+                    {selectedLead.lead.leadLastName?.charAt(0)}
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-muted-foreground">Company Rank</label>
-                    <p className="text-2xl font-bold">
-                      {selectedLead.companyRank ? `#${selectedLead.companyRank}` : '-'}
+                    <span className="text-xl">
+                      {selectedLead.lead.leadFirstName} {selectedLead.lead.leadLastName}
+                    </span>
+                    <p className="text-sm text-muted-foreground font-normal">
+                      {selectedLead.lead.leadJobTitle || 'No title'}
                     </p>
                   </div>
+                </>
+              )}
+            </DialogTitle>
+          </DialogHeader>
+          {selectedLead && (
+            <div className="space-y-6 mt-4">
+              {/* Score Card */}
+              <div className="grid grid-cols-3 gap-4">
+                <div className="p-4 rounded-xl bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/20 text-center">
+                  <p className="text-3xl font-bold text-primary">{selectedLead.relevanceScore}</p>
+                  <p className="text-xs text-muted-foreground">Relevance Score</p>
+                </div>
+                <div className="p-4 rounded-xl bg-gradient-to-br from-secondary to-secondary/50 border text-center">
+                  <p className="text-3xl font-bold">
+                    {selectedLead.companyRank ? `#${selectedLead.companyRank}` : '-'}
+                  </p>
+                  <p className="text-xs text-muted-foreground">Company Rank</p>
+                </div>
+                <div className="p-4 rounded-xl bg-gradient-to-br from-secondary to-secondary/50 border text-center">
+                  <Badge className={`${getBuyerTypeStyles(selectedLead.buyerType)} text-sm`}>
+                    {selectedLead.buyerType?.replace('_', ' ') || 'Unknown'}
+                  </Badge>
+                  <p className="text-xs text-muted-foreground mt-2">Buyer Type</p>
+                </div>
+              </div>
+
+              {/* Company Info */}
+              <div className="p-4 rounded-xl bg-secondary/30 border">
+                <div className="flex items-center gap-2 mb-3">
+                  <Building2 className="h-4 w-4 text-muted-foreground" />
+                  <span className="font-semibold">{selectedLead.lead.accountName}</span>
+                </div>
+                <div className="grid grid-cols-3 gap-4 text-sm">
                   <div>
-                    <label className="text-sm font-medium text-muted-foreground">Buyer Type</label>
-                    <p>{selectedLead.buyerType?.replace('_', ' ') || '-'}</p>
+                    <p className="text-muted-foreground">Size</p>
+                    <p className="font-medium">{selectedLead.lead.accountEmployeeRange || '-'}</p>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-muted-foreground">Seniority</label>
-                    <p>{selectedLead.seniority?.replace('_', ' ') || '-'}</p>
+                    <p className="text-muted-foreground">Industry</p>
+                    <p className="font-medium">{selectedLead.lead.accountIndustry || '-'}</p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground">Domain</p>
+                    <p className="font-medium">{selectedLead.lead.accountDomain || '-'}</p>
                   </div>
                 </div>
               </div>
 
-              <div className="border-t pt-4">
-                <label className="text-sm font-medium text-muted-foreground">Reasoning</label>
-                <p className="mt-1 text-sm">{selectedLead.reasoning || 'No reasoning provided'}</p>
+              {/* Reasoning */}
+              <div className="p-4 rounded-xl bg-secondary/30 border">
+                <div className="flex items-center gap-2 mb-3">
+                  <Sparkles className="h-4 w-4 text-primary" />
+                  <span className="font-semibold">AI Analysis</span>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  {selectedLead.reasoning || 'No reasoning provided'}
+                </p>
               </div>
 
-              {selectedLead.positiveSignals && (
-                <div>
-                  <label className="text-sm font-medium text-muted-foreground">Positive Signals</label>
-                  <div className="flex flex-wrap gap-2 mt-1">
-                    {JSON.parse(selectedLead.positiveSignals).map((signal: string, i: number) => (
-                      <Badge key={i} variant="secondary" className="bg-green-100">
-                        {signal}
-                      </Badge>
-                    ))}
+              {/* Signals */}
+              <div className="grid grid-cols-2 gap-4">
+                {selectedLead.positiveSignals && (
+                  <div className="p-4 rounded-xl bg-green-500/5 border border-green-500/20">
+                    <div className="flex items-center gap-2 mb-3">
+                      <ThumbsUp className="h-4 w-4 text-green-600" />
+                      <span className="font-semibold text-green-700">Positive Signals</span>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {JSON.parse(selectedLead.positiveSignals).map((signal: string, i: number) => (
+                        <Badge key={i} className="bg-green-100 text-green-700 border-green-200">
+                          {signal}
+                        </Badge>
+                      ))}
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
 
-              {selectedLead.negativeSignals && (
-                <div>
-                  <label className="text-sm font-medium text-muted-foreground">Negative Signals</label>
-                  <div className="flex flex-wrap gap-2 mt-1">
-                    {JSON.parse(selectedLead.negativeSignals).map((signal: string, i: number) => (
-                      <Badge key={i} variant="secondary" className="bg-red-100">
-                        {signal}
-                      </Badge>
-                    ))}
+                {selectedLead.negativeSignals && (
+                  <div className="p-4 rounded-xl bg-red-500/5 border border-red-500/20">
+                    <div className="flex items-center gap-2 mb-3">
+                      <ThumbsDown className="h-4 w-4 text-red-600" />
+                      <span className="font-semibold text-red-700">Negative Signals</span>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {JSON.parse(selectedLead.negativeSignals).map((signal: string, i: number) => (
+                        <Badge key={i} className="bg-red-100 text-red-700 border-red-200">
+                          {signal}
+                        </Badge>
+                      ))}
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
+              </div>
             </div>
           )}
         </DialogContent>
