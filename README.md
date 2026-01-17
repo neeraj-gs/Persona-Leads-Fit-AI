@@ -29,9 +29,9 @@ This application takes a list of leads from target companies and uses AI to:
 - [x] CSV upload from frontend
 - [x] Real-time ranking progress (SSE)
 
-### Advanced Features (In Progress)
-- [ ] A/B Prompt Testing
-- [ ] Multi-threading Visualization
+### Advanced Features (Completed)
+- [x] A/B Prompt Testing - Compare prompts against evaluation set with accuracy metrics
+- [x] Multi-threading Visualization - Interactive org chart with engagement strategy
 
 ## Tech Stack
 
@@ -44,6 +44,10 @@ This application takes a list of leads from target companies and uses AI to:
 | ORM | Prisma |
 | Tables | TanStack Table |
 | AI | OpenAI GPT-4o-mini |
+
+## Setup Guide
+
+For a complete step-by-step guide to set up and test all features, see [SETUP_GUIDE.md](./SETUP_GUIDE.md).
 
 ## Local Development
 

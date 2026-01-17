@@ -7,6 +7,8 @@ import { CSVUpload } from '@/components/csv-upload';
 import { LeadsTable } from '@/components/leads-table';
 import { RankingControls } from '@/components/ranking-controls';
 import { StatisticsPanel } from '@/components/statistics-panel';
+import { ABTestPanel } from '@/components/ab-test-panel';
+import { OrgChart } from '@/components/org-chart';
 import { useLeads } from '@/hooks/use-leads';
 import { useRankings } from '@/hooks/use-rankings';
 import { Database, BarChart3, FlaskConical, Network } from 'lucide-react';
@@ -243,32 +245,26 @@ export default function Home() {
 
           {/* Advanced Tab (A/B Testing & Multi-threading) */}
           <TabsContent value="advanced" className="space-y-6">
-            <div className="grid gap-6 lg:grid-cols-2">
-              <div className="rounded-lg border p-6">
-                <h3 className="font-semibold mb-4 flex items-center gap-2">
-                  <FlaskConical className="h-5 w-5" />
-                  A/B Prompt Testing
-                </h3>
-                <p className="text-sm text-muted-foreground mb-4">
-                  Compare different prompts to find the most accurate and cost-effective approach.
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  Coming soon: Run the same leads through different prompts and compare results.
-                </p>
-              </div>
-              <div className="rounded-lg border p-6">
-                <h3 className="font-semibold mb-4 flex items-center gap-2">
-                  <Network className="h-5 w-5" />
-                  Multi-threading Visualization
-                </h3>
-                <p className="text-sm text-muted-foreground mb-4">
-                  Visualize organizational relationships and identify champion paths.
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  Coming soon: Interactive org chart showing recommended contact sequences.
-                </p>
-              </div>
-            </div>
+            <Tabs defaultValue="ab-testing" className="w-full">
+              <TabsList className="grid w-full grid-cols-2 mb-4">
+                <TabsTrigger value="ab-testing" className="flex items-center gap-2">
+                  <FlaskConical className="h-4 w-4" />
+                  A/B Testing
+                </TabsTrigger>
+                <TabsTrigger value="visualization" className="flex items-center gap-2">
+                  <Network className="h-4 w-4" />
+                  Multi-threading
+                </TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="ab-testing">
+                <ABTestPanel />
+              </TabsContent>
+
+              <TabsContent value="visualization">
+                <OrgChart results={results} runId={selectedRunId} />
+              </TabsContent>
+            </Tabs>
           </TabsContent>
         </Tabs>
       </main>
