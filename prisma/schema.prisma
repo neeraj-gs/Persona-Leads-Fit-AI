@@ -1,0 +1,161 @@
+// Prisma Schema for Throxy Persona Ranker
+// Learn more: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// Lead data imported from CSV
+model Lead {
+  id                    String   @id @default(uuid())
+  accountName           String   @map("account_name")
+  leadFirstName         String?  @map("lead_first_name")
+  leadLastName          String?  @map("lead_last_name")
+  leadJobTitle          String?  @map("lead_job_title")
+  accountDomain         String?  @map("account_domain")
+  accountEmployeeRange  String?  @map("account_employee_range")
+  accountIndustry       String?  @map("account_industry")
+  linkedinUrl           String?  @map("linkedin_url")
+  batchId               String?  @map("batch_id") // Groups leads from same CSV upload
+  createdAt             DateTime @default(now()) @map("created_at")
+  updatedAt             DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  rankings LeadRanking[]
+
+  @@map("leads")
+}
+
+// A ranking run/execution
+model RankingRun {
+  id              String    @id @default(uuid())
+  name            String?   // Optional name for the run
+  status          String    @default("pending") // pending, processing, completed, failed
+  totalLeads      Int       @default(0) @map("total_leads")
+  processedLeads  Int       @default(0) @map("processed_leads")
+  relevantLeads   Int       @default(0) @map("relevant_leads")
+  totalCost       Float     @default(0) @map("total_cost")
+  totalTokens     Int       @default(0) @map("total_tokens")
+  promptId        String?   @map("prompt_id") // Which prompt was used
+  personaSpec     String?   @map("persona_spec") // The persona spec used (stored as text)
+  errorMessage    String?   @map("error_message")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  completedAt     DateTime? @map("completed_at")
+
+  // Relations
+  rankings LeadRanking[]
+  prompt   Prompt?       @relation(fields: [promptId], references: [id])
+
+  @@map("ranking_runs")
+}
+
+// Individual lead ranking result
+model LeadRanking {
+  id            String   @id @default(uuid())
+  leadId        String   @map("lead_id")
+  rankingRunId  String   @map("ranking_run_id")
+
+  // AI Analysis Results
+  isRelevant    Boolean  @default(false) @map("is_relevant")
+  relevanceScore Int     @default(0) @map("relevance_score") // 0-100
+  companyRank   Int?     @map("company_rank") // Rank within company (1, 2, 3...)
+
+  // Detailed AI Analysis
+  reasoning     String?  // Why this score was given
+  department    String?  // Detected department
+  seniority     String?  // Detected seniority level
+  buyerType     String?  @map("buyer_type") // decision_maker, champion, influencer, not_relevant
+
+  // Company Size Analysis
+  companySizeCategory String? @map("company_size_category") // startup, smb, mid_market, enterprise
+
+  // Signals detected
+  positiveSignals String? @map("positive_signals") // JSON array of positive signals
+  negativeSignals String? @map("negative_signals") // JSON array of negative signals
+
+  // Cost tracking
+  aiCost        Float    @default(0) @map("ai_cost")
+  tokensUsed    Int      @default(0) @map("tokens_used")
+
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  // Relations
+  lead        Lead       @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  rankingRun  RankingRun @relation(fields: [rankingRunId], references: [id], onDelete: Cascade)
+
+  @@unique([leadId, rankingRunId])
+  @@map("lead_rankings")
+}
+
+// Prompts for A/B testing
+model Prompt {
+  id              String   @id @default(uuid())
+  name            String   // e.g., "Version A - Detailed", "Version B - Concise"
+  description     String?
+  systemPrompt    String   @map("system_prompt")
+  userPromptTemplate String @map("user_prompt_template")
+  isActive        Boolean  @default(true) @map("is_active")
+  isDefault       Boolean  @default(false) @map("is_default")
+  version         Int      @default(1)
+
+  // Performance metrics
+  totalRuns       Int      @default(0) @map("total_runs")
+  avgAccuracy     Float?   @map("avg_accuracy") // Compared to evaluation set
+  avgCost         Float?   @map("avg_cost")
+
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  rankingRuns     RankingRun[]
+  testResultsA    PromptTest[] @relation("PromptA")
+  testResultsB    PromptTest[] @relation("PromptB")
+
+  @@map("prompts")
+}
+
+// A/B Test Results
+model PromptTest {
+  id              String   @id @default(uuid())
+  name            String?
+  promptAId       String   @map("prompt_a_id")
+  promptBId       String   @map("prompt_b_id")
+  status          String   @default("pending") // pending, running, completed
+
+  // Results
+  promptAAccuracy Float?   @map("prompt_a_accuracy")
+  promptBAccuracy Float?   @map("prompt_b_accuracy")
+  promptACost     Float?   @map("prompt_a_cost")
+  promptBCost     Float?   @map("prompt_b_cost")
+  winner          String?  // prompt_a, prompt_b, or tie
+
+  // Sample size
+  sampleSize      Int      @default(50) @map("sample_size")
+
+  createdAt       DateTime @default(now()) @map("created_at")
+  completedAt     DateTime? @map("completed_at")
+
+  // Relations
+  promptA         Prompt   @relation("PromptA", fields: [promptAId], references: [id])
+  promptB         Prompt   @relation("PromptB", fields: [promptBId], references: [id])
+
+  @@map("prompt_tests")
+}
+
+// CSV Upload batches for tracking
+model UploadBatch {
+  id              String   @id @default(uuid())
+  fileName        String   @map("file_name")
+  totalRows       Int      @map("total_rows")
+  processedRows   Int      @default(0) @map("processed_rows")
+  status          String   @default("pending") // pending, processing, completed, failed
+  errorMessage    String?  @map("error_message")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  @@map("upload_batches")
+}
