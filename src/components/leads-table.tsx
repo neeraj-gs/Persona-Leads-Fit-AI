@@ -219,7 +219,12 @@ export function LeadsTable({ data, isLoading }: LeadsTableProps) {
             </div>
           );
         },
-        filterFn: 'relevanceScore',
+        filterFn: (row, columnId, filterValue: { min?: number; max?: number }) => {
+          const score = row.getValue(columnId) as number;
+          if (filterValue?.min !== undefined && score < filterValue.min) return false;
+          if (filterValue?.max !== undefined && score > filterValue.max) return false;
+          return true;
+        },
       },
       {
         id: 'name',
@@ -412,14 +417,6 @@ export function LeadsTable({ data, isLoading }: LeadsTableProps) {
     },
     onGlobalFilterChange: setGlobalFilter,
     globalFilterFn: 'includesString',
-    filterFns: {
-      relevanceScore: (row, columnId, filterValue: { min?: number; max?: number }) => {
-        const score = row.getValue(columnId) as number;
-        if (filterValue.min !== undefined && score < filterValue.min) return false;
-        if (filterValue.max !== undefined && score > filterValue.max) return false;
-        return true;
-      },
-    },
   });
 
   return (

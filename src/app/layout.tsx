@@ -17,8 +17,6 @@ export const metadata: Metadata = {
   description: "AI-powered lead qualification and ranking system for B2B sales",
   icons: {
     icon: '/icon.svg',
-    shortcut: '/icon.svg',
-    apple: '/icon.svg',
   },
 };
 
