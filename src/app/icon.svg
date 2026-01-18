@@ -1,0 +1,29 @@
+<svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background with gradient effect -->
+  <rect width="32" height="32" rx="6" fill="url(#gradient)"/>
+  <defs>
+    <linearGradient id="gradient" x1="0" y1="0" x2="32" y2="32" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#1a1a1a"/>
+      <stop offset="100%" stop-color="#2a2a2a"/>
+    </linearGradient>
+  </defs>
+  
+  <!-- Main sparkle/star icon (representing AI) -->
+  <path d="M16 6L17.8 11.4L23.2 13.2L17.8 15L16 20.4L14.2 15L8.8 13.2L14.2 11.4L16 6Z" fill="#ffffff" stroke="#1a1a1a" stroke-width="0.5"/>
+  
+  <!-- Ranking bars (representing lead ranking) -->
+  <g fill="#ffffff" opacity="0.9">
+    <!-- Bar 1 (shortest) -->
+    <rect x="5" y="24" width="3" height="2" rx="0.5" fill="#ffffff" opacity="0.6"/>
+    <!-- Bar 2 -->
+    <rect x="9.5" y="23" width="3" height="3" rx="0.5" fill="#ffffff" opacity="0.7"/>
+    <!-- Bar 3 -->
+    <rect x="14" y="22" width="3" height="4" rx="0.5" fill="#ffffff" opacity="0.8"/>
+    <!-- Bar 4 (tallest) -->
+    <rect x="18.5" y="21" width="3" height="5" rx="0.5" fill="#ffffff" opacity="0.9"/>
+  </g>
+  
+  <!-- Small accent sparkles -->
+  <circle cx="7" cy="9" r="1" fill="#ffffff" opacity="0.7"/>
+  <circle cx="25" cy="9" r="1" fill="#ffffff" opacity="0.7"/>
+</svg>
