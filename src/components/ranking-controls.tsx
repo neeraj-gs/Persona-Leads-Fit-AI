@@ -13,22 +13,11 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog';
-import {
   Play,
-  Download,
-  Trash2,
   Settings,
   Loader2,
-  History,
 } from 'lucide-react';
+import { ExportDialog } from '@/components/export-dialog';
 
 interface Prompt {
   id: string;
@@ -54,8 +43,8 @@ interface RankingControlsProps {
   onStartRanking: (params: { name?: string; promptId?: string }) => Promise<string | null>;
   onSelectRun: (runId: string) => void;
   onDeleteRun: (runId: string) => Promise<boolean>;
-  onExport: (runId: string, topN?: number) => void;
   selectedRunId?: string;
+  totalCompanies?: number;
 }
 
 export function RankingControls({
@@ -65,14 +54,11 @@ export function RankingControls({
   onStartRanking,
   onSelectRun,
   onDeleteRun,
-  onExport,
   selectedRunId,
+  totalCompanies = 0,
 }: RankingControlsProps) {
   const [runName, setRunName] = useState('');
   const [selectedPromptId, setSelectedPromptId] = useState<string>('');
-  const [exportTopN, setExportTopN] = useState<string>('');
-  const [showExportDialog, setShowExportDialog] = useState(false);
-  const [showHistoryDialog, setShowHistoryDialog] = useState(false);
 
   const handleStartRanking = async () => {
     const runId = await onStartRanking({
@@ -84,15 +70,8 @@ export function RankingControls({
     }
   };
 
-  const handleExport = () => {
-    if (selectedRunId) {
-      const topN = exportTopN ? parseInt(exportTopN) : undefined;
-      onExport(selectedRunId, topN);
-      setShowExportDialog(false);
-    }
-  };
-
   const defaultPrompt = prompts.find(p => p.isDefault);
+  const selectedRun = runs.find(r => r.id === selectedRunId);
 
   return (
     <Card>
@@ -165,128 +144,14 @@ export function RankingControls({
           </Button>
 
           {/* Export Dialog */}
-          <Dialog open={showExportDialog} onOpenChange={setShowExportDialog}>
-            <DialogTrigger asChild>
-              <Button
-                variant="outline"
-                disabled={!selectedRunId}
-              >
-                <Download className="mr-2 h-4 w-4" />
-                Export
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Export Ranked Leads</DialogTitle>
-                <DialogDescription>
-                  Export the ranking results to a CSV file
-                </DialogDescription>
-              </DialogHeader>
-              <div className="space-y-4 py-4">
-                <div className="space-y-2">
-                  <Label htmlFor="top-n">Top N per Company (optional)</Label>
-                  <Input
-                    id="top-n"
-                    type="number"
-                    min="1"
-                    placeholder="e.g., 3 (leave empty for all)"
-                    value={exportTopN}
-                    onChange={(e) => setExportTopN(e.target.value)}
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Only export the top N ranked leads per company. Leave empty to export all.
-                  </p>
-                </div>
-              </div>
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setShowExportDialog(false)}>
-                  Cancel
-                </Button>
-                <Button onClick={handleExport}>
-                  <Download className="mr-2 h-4 w-4" />
-                  Download CSV
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
-
-          {/* History Dialog */}
-          <Dialog open={showHistoryDialog} onOpenChange={setShowHistoryDialog}>
-            <DialogTrigger asChild>
-              <Button variant="outline">
-                <History className="mr-2 h-4 w-4" />
-                History
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-2xl">
-              <DialogHeader>
-                <DialogTitle>Ranking History</DialogTitle>
-                <DialogDescription>
-                  View and manage previous ranking runs
-                </DialogDescription>
-              </DialogHeader>
-              <div className="max-h-96 overflow-y-auto">
-                {runs.length === 0 ? (
-                  <p className="text-center text-muted-foreground py-8">
-                    No ranking runs yet
-                  </p>
-                ) : (
-                  <div className="space-y-2">
-                    {runs.map((run) => (
-                      <div
-                        key={run.id}
-                        className={`flex items-center justify-between p-3 rounded-lg border ${
-                          selectedRunId === run.id ? 'border-primary bg-primary/5' : ''
-                        }`}
-                      >
-                        <div className="flex-1">
-                          <div className="font-medium">
-                            {run.name || `Run ${run.id.slice(0, 8)}`}
-                          </div>
-                          <div className="text-sm text-muted-foreground">
-                            {new Date(run.createdAt).toLocaleString()} •{' '}
-                            {run.totalLeads} leads •{' '}
-                            {run.relevantLeads} relevant •{' '}
-                            ${run.totalCost.toFixed(4)}
-                          </div>
-                          <div className="text-xs">
-                            Status:{' '}
-                            <span className={
-                              run.status === 'completed' ? 'text-green-600' :
-                              run.status === 'failed' ? 'text-red-600' :
-                              run.status === 'processing' ? 'text-blue-600' :
-                              'text-muted-foreground'
-                            }>
-                              {run.status}
-                            </span>
-                          </div>
-                        </div>
-                        <div className="flex gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => {
-                              onSelectRun(run.id);
-                              setShowHistoryDialog(false);
-                            }}
-                          >
-                            View
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => onDeleteRun(run.id)}
-                          >
-                            <Trash2 className="h-4 w-4 text-destructive" />
-                          </Button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </DialogContent>
-          </Dialog>
+          {selectedRunId && selectedRun && (
+            <ExportDialog
+              runId={selectedRunId}
+              totalLeads={selectedRun.totalLeads}
+              relevantLeads={selectedRun.relevantLeads}
+              totalCompanies={totalCompanies}
+            />
+          )}
         </div>
       </CardContent>
     </Card>

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
+import { getProgress } from '@/lib/progress-store';
 
 /**
  * GET /api/ab-tests/[testId]
@@ -27,9 +28,23 @@ export async function GET(
       );
     }
 
+    // Get progress data if test is running
+    const progress = getProgress(`abtest-${testId}`);
+
     return NextResponse.json({
       success: true,
-      data: test,
+      data: {
+        ...test,
+        progress: progress ? {
+          status: progress.status,
+          current: progress.current,
+          total: progress.total,
+          phase: progress.phase,
+          details: progress.details,
+          result: progress.result,
+          error: progress.error,
+        } : null,
+      },
     });
   } catch (error) {
     console.error('Error fetching A/B test:', error);

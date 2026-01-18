@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Toaster, toast } from 'sonner';
 import { CSVUpload } from '@/components/csv-upload';
@@ -31,6 +31,8 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
 import Link from 'next/link';
 
 interface Prompt {
@@ -63,7 +65,6 @@ export default function AppPage() {
     startRanking,
     subscribeToProgress,
     deleteRun,
-    exportResults,
   } = useRankings();
 
   // Fetch prompts
@@ -116,6 +117,13 @@ export default function AppPage() {
     fetchRunResults(runId);
     setActiveTab('results');
   }, [fetchRunResults]);
+
+  // Sort runs by date (newest first)
+  const sortedRuns = useMemo(() => {
+    return [...runs].sort((a, b) => 
+      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
+  }, [runs]);
 
   const handleDeleteRun = useCallback(async (runId: string) => {
     const success = await deleteRun(runId);
@@ -176,28 +184,38 @@ export default function AppPage() {
               </Link>
             </div>
 
-            {/* Quick Stats */}
-            <div className="hidden md:flex items-center gap-6">
-              <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-secondary/50">
-                <Users className="h-4 w-4 text-primary" />
-                <div>
-                  <p className="text-xs text-muted-foreground">Leads</p>
-                  <p className="font-semibold">{leads.length.toLocaleString()}</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-secondary/50">
-                <Activity className="h-4 w-4 text-chart-2" />
-                <div>
-                  <p className="text-xs text-muted-foreground">Runs</p>
-                  <p className="font-semibold">{completedRuns}</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-secondary/50">
-                <DollarSign className="h-4 w-4 text-chart-3" />
-                <div>
-                  <p className="text-xs text-muted-foreground">Cost</p>
-                  <p className="font-semibold">${totalCost.toFixed(2)}</p>
-                </div>
+            {/* Select Batch Dropdown */}
+            <div className="flex items-center gap-4">
+              <div className="space-y-1.5 min-w-[240px]">
+                <Label htmlFor="batch-select" className="text-xs text-muted-foreground">
+                  Select Batch
+                </Label>
+                <Select
+                  value={selectedRunId || 'none'}
+                  onValueChange={(value) => {
+                    if (value !== 'none') {
+                      handleSelectRun(value);
+                    } else {
+                      setSelectedRunId(undefined);
+                    }
+                  }}
+                >
+                  <SelectTrigger id="batch-select" className="bg-background border h-9">
+                    <SelectValue placeholder="Select a batch" />
+                  </SelectTrigger>
+                  <SelectContent className="max-h-[300px]">
+                    <SelectItem value="none">No batch selected</SelectItem>
+                    {sortedRuns.map((run) => {
+                      const displayName = run.name || `Run ${run.id.slice(0, 8)}`;
+                      const dateStr = new Date(run.createdAt).toLocaleDateString();
+                      return (
+                        <SelectItem key={run.id} value={run.id}>
+                          {displayName} • {dateStr} • {run.totalLeads} leads
+                        </SelectItem>
+                      );
+                    })}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
           </div>
@@ -406,8 +424,8 @@ export default function AppPage() {
                       onStartRanking={handleStartRanking}
                       onSelectRun={handleSelectRun}
                       onDeleteRun={handleDeleteRun}
-                      onExport={exportResults}
                       selectedRunId={selectedRunId}
+                      totalCompanies={new Set(results.map(r => r.lead.accountName)).size || new Set(leads.map(l => l.accountName)).size}
                     />
                   </CardContent>
                 </Card>

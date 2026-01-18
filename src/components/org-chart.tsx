@@ -25,7 +25,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { User, Building2, Crown, Star, Target, Users } from 'lucide-react';
+import { User, Building2, Crown, Star, Target, Users, ChevronDown, ChevronUp } from 'lucide-react';
 
 interface LeadRanking {
   id: string;
@@ -155,6 +155,7 @@ const nodeTypes = {
 
 export function OrgChart({ results, runId }: OrgChartProps) {
   const [selectedCompany, setSelectedCompany] = useState<string | null>(null);
+  const [showAllContacts, setShowAllContacts] = useState(false);
   const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
 
@@ -312,7 +313,10 @@ export function OrgChart({ results, runId }: OrgChartProps) {
             Visualize contact hierarchy and recommended engagement sequence
           </p>
         </div>
-        <Select value={selectedCompany || ''} onValueChange={setSelectedCompany}>
+        <Select value={selectedCompany || ''} onValueChange={(value) => {
+          setSelectedCompany(value);
+          setShowAllContacts(false); // Reset expanded state when switching companies
+        }}>
           <SelectTrigger className="w-[280px]">
             <SelectValue placeholder="Select a company" />
           </SelectTrigger>
@@ -390,10 +394,13 @@ export function OrgChart({ results, runId }: OrgChartProps) {
                 return <p className="text-muted-foreground">No relevant contacts identified at this company.</p>;
               }
 
+              const displayedContacts = showAllContacts ? companyLeads : companyLeads.slice(0, 5);
+              const remainingCount = companyLeads.length - 5;
+
               return (
                 <div className="space-y-4">
                   <ol className="list-decimal list-inside space-y-2">
-                    {companyLeads.slice(0, 5).map((ranking, idx) => (
+                    {displayedContacts.map((ranking, idx) => (
                       <li key={ranking.id} className="text-sm">
                         <span className="font-medium">
                           {ranking.lead.leadFirstName} {ranking.lead.leadLastName}
@@ -409,9 +416,22 @@ export function OrgChart({ results, runId }: OrgChartProps) {
                   </ol>
 
                   {companyLeads.length > 5 && (
-                    <p className="text-sm text-muted-foreground">
-                      +{companyLeads.length - 5} more contacts
-                    </p>
+                    <button
+                      onClick={() => setShowAllContacts(!showAllContacts)}
+                      className="text-sm text-primary hover:underline font-medium cursor-pointer flex items-center gap-1 transition-colors"
+                    >
+                      {showAllContacts ? (
+                        <>
+                          <ChevronUp className="h-4 w-4" />
+                          Show less
+                        </>
+                      ) : (
+                        <>
+                          <ChevronDown className="h-4 w-4" />
+                          +{remainingCount} more contact{remainingCount > 1 ? 's' : ''}
+                        </>
+                      )}
+                    </button>
                   )}
                 </div>
               );

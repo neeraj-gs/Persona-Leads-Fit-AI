@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { runABTest, EvaluationLead } from '@/lib/ai/evaluator';
+import { createProgress, updateProgress, completeProgress, failProgress, getProgress } from '@/lib/progress-store';
 
 /**
  * GET /api/ab-tests
@@ -123,8 +124,29 @@ async function runABTestAsync(
   promptB: { id: string; name: string; systemPrompt: string },
   evaluationLeads: EvaluationLead[]
 ) {
+  // Initialize progress tracking
+  // Total is 2x leads (one for each prompt)
+  const totalSteps = evaluationLeads.length * 2;
+  createProgress(`abtest-${testId}`, totalSteps, 'Starting A/B Test...');
+
   try {
-    const result = await runABTest(promptA, promptB, evaluationLeads);
+    const result = await runABTest(
+      promptA,
+      promptB,
+      evaluationLeads,
+      'gpt-4o-mini',
+      (promptIndex, current, total) => {
+        const promptLabel = promptIndex === 0 ? 'A' : 'B';
+        const promptName = promptIndex === 0 ? promptA.name : promptB.name;
+        const overallCurrent = promptIndex * evaluationLeads.length + current;
+        updateProgress(
+          `abtest-${testId}`,
+          overallCurrent,
+          `Evaluating Prompt ${promptLabel}: ${promptName}`,
+          `Lead ${current}/${total}`
+        );
+      }
+    );
 
     // Update test record with results
     await db.promptTest.update({
@@ -159,8 +181,28 @@ async function runABTestAsync(
         },
       }),
     ]);
+
+    // Mark progress as completed with results
+    completeProgress(`abtest-${testId}`, {
+      winner: result.winner,
+      promptA: {
+        name: promptA.name,
+        accuracy: result.promptA.relevanceAccuracy,
+        f1: result.promptA.relevanceF1,
+        cost: result.promptA.totalCost,
+      },
+      promptB: {
+        name: promptB.name,
+        accuracy: result.promptB.relevanceAccuracy,
+        f1: result.promptB.relevanceF1,
+        cost: result.promptB.totalCost,
+      },
+    });
   } catch (error) {
     console.error('A/B test failed:', error);
+
+    // Mark progress as failed
+    failProgress(`abtest-${testId}`, error instanceof Error ? error.message : 'Unknown error');
 
     await db.promptTest.update({
       where: { id: testId },

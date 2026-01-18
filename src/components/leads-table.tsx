@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import {
   ColumnDef,
   ColumnFiltersState,
@@ -56,6 +56,8 @@ import {
   ThumbsUp,
   ThumbsDown,
   Sparkles,
+  Filter,
+  SlidersHorizontal,
 } from 'lucide-react';
 import {
   Dialog,
@@ -100,6 +102,26 @@ export function LeadsTable({ data, isLoading }: LeadsTableProps) {
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [globalFilter, setGlobalFilter] = useState('');
   const [selectedLead, setSelectedLead] = useState<LeadRanking | null>(null);
+  
+  // Filter options
+  const uniqueCompanies = useMemo(() => {
+    const companies = new Set(data.map(item => item.lead.accountName));
+    return Array.from(companies).sort();
+  }, [data]);
+  
+  const uniqueTitles = useMemo(() => {
+    const titles = new Set(
+      data
+        .map(item => item.lead.leadJobTitle)
+        .filter((title): title is string => !!title)
+    );
+    return Array.from(titles).sort();
+  }, [data]);
+  
+  const [companyFilter, setCompanyFilter] = useState<string>('all');
+  const [titleFilter, setTitleFilter] = useState<string>('all');
+  const [minScore, setMinScore] = useState<string>('');
+  const [maxScore, setMaxScore] = useState<string>('');
 
   const getBuyerTypeIcon = (buyerType: string | null) => {
     switch (buyerType) {
@@ -197,6 +219,7 @@ export function LeadsTable({ data, isLoading }: LeadsTableProps) {
             </div>
           );
         },
+        filterFn: 'relevanceScore',
       },
       {
         id: 'name',
@@ -252,6 +275,9 @@ export function LeadsTable({ data, isLoading }: LeadsTableProps) {
             <span className="text-muted-foreground text-sm">-</span>
           );
         },
+        filterFn: (row, id, value) => {
+          return row.original.lead.leadJobTitle === value;
+        },
       },
       {
         id: 'company',
@@ -280,6 +306,9 @@ export function LeadsTable({ data, isLoading }: LeadsTableProps) {
               )}
             </div>
           );
+        },
+        filterFn: (row, id, value) => {
+          return row.original.lead.accountName === value;
         },
       },
       {
@@ -336,6 +365,37 @@ export function LeadsTable({ data, isLoading }: LeadsTableProps) {
     []
   );
 
+  // Apply filters
+  useEffect(() => {
+    const filters: ColumnFiltersState = [];
+    
+    if (companyFilter && companyFilter !== 'all') {
+      filters.push({
+        id: 'company',
+        value: companyFilter,
+      });
+    }
+    
+    if (titleFilter && titleFilter !== 'all') {
+      filters.push({
+        id: 'title',
+        value: titleFilter,
+      });
+    }
+    
+    if (minScore || maxScore) {
+      filters.push({
+        id: 'relevanceScore',
+        value: {
+          min: minScore ? Number(minScore) : undefined,
+          max: maxScore ? Number(maxScore) : undefined,
+        },
+      });
+    }
+    
+    setColumnFilters(filters);
+  }, [companyFilter, titleFilter, minScore, maxScore]);
+
   const table = useReactTable({
     data,
     columns,
@@ -352,6 +412,14 @@ export function LeadsTable({ data, isLoading }: LeadsTableProps) {
     },
     onGlobalFilterChange: setGlobalFilter,
     globalFilterFn: 'includesString',
+    filterFns: {
+      relevanceScore: (row, columnId, filterValue: { min?: number; max?: number }) => {
+        const score = row.getValue(columnId) as number;
+        if (filterValue.min !== undefined && score < filterValue.min) return false;
+        if (filterValue.max !== undefined && score > filterValue.max) return false;
+        return true;
+      },
+    },
   });
 
   return (
@@ -384,6 +452,102 @@ export function LeadsTable({ data, isLoading }: LeadsTableProps) {
                 <SelectItem value="100">100</SelectItem>
               </SelectContent>
             </Select>
+          </div>
+        </div>
+
+        {/* Filters */}
+        <div className="glass-card p-4 rounded-lg border space-y-4">
+          <div className="flex items-center gap-2 mb-3">
+            <SlidersHorizontal className="h-4 w-4 text-muted-foreground" />
+            <span className="text-sm font-semibold">Filters</span>
+            {(companyFilter !== 'all' || titleFilter !== 'all' || minScore || maxScore) && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setCompanyFilter('all');
+                  setTitleFilter('all');
+                  setMinScore('');
+                  setMaxScore('');
+                }}
+                className="h-6 px-2 text-xs ml-auto"
+              >
+                <X className="h-3 w-3 mr-1" />
+                Clear All
+              </Button>
+            )}
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* Company Filter */}
+            <div className="space-y-2">
+              <label className="text-xs font-medium text-muted-foreground flex items-center gap-1">
+                <Building2 className="h-3 w-3" />
+                Company
+              </label>
+              <Select value={companyFilter} onValueChange={setCompanyFilter}>
+                <SelectTrigger className="bg-background border">
+                  <SelectValue placeholder="All companies" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All companies</SelectItem>
+                  {uniqueCompanies.map((company) => (
+                    <SelectItem key={company} value={company}>
+                      {company}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Position/Title Filter */}
+            <div className="space-y-2">
+              <label className="text-xs font-medium text-muted-foreground flex items-center gap-1">
+                <Briefcase className="h-3 w-3" />
+                Position
+              </label>
+              <Select value={titleFilter} onValueChange={setTitleFilter}>
+                <SelectTrigger className="bg-background border">
+                  <SelectValue placeholder="All positions" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All positions</SelectItem>
+                  {uniqueTitles.map((title) => (
+                    <SelectItem key={title} value={title}>
+                      {title}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Score Range Filter */}
+            <div className="space-y-2">
+              <label className="text-xs font-medium text-muted-foreground flex items-center gap-1">
+                <Target className="h-3 w-3" />
+                Score Range
+              </label>
+              <div className="flex items-center gap-2">
+                <Input
+                  type="number"
+                  placeholder="Min"
+                  min="0"
+                  max="100"
+                  value={minScore}
+                  onChange={(e) => setMinScore(e.target.value)}
+                  className="bg-background border h-9"
+                />
+                <span className="text-muted-foreground">-</span>
+                <Input
+                  type="number"
+                  placeholder="Max"
+                  min="0"
+                  max="100"
+                  value={maxScore}
+                  onChange={(e) => setMaxScore(e.target.value)}
+                  className="bg-background border h-9"
+                />
+              </div>
+            </div>
           </div>
         </div>
 

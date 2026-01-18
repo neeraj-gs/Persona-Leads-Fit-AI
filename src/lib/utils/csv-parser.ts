@@ -215,14 +215,13 @@ export function generateExportCSV(
     accountDomain: string | null;
     accountEmployeeRange: string | null;
     accountIndustry: string | null;
-    linkedinUrl: string | null;
     relevanceScore: number;
     companyRank: number | null;
     isRelevant: boolean;
-    reasoning: string | null;
     buyerType: string | null;
     department: string | null;
     seniority: string | null;
+    reasoning: string | null;
   }>
 ): string {
   const headers = [
@@ -233,7 +232,6 @@ export function generateExportCSV(
     'Domain',
     'Employee Range',
     'Industry',
-    'LinkedIn URL',
     'Relevance Score',
     'Company Rank',
     'Is Relevant',
@@ -251,7 +249,6 @@ export function generateExportCSV(
     lead.accountDomain || '',
     lead.accountEmployeeRange || '',
     lead.accountIndustry || '',
-    lead.linkedinUrl || '',
     lead.relevanceScore.toString(),
     lead.companyRank?.toString() || '-',
     lead.isRelevant ? 'Yes' : 'No',
