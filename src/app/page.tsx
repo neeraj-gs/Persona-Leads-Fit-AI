@@ -310,43 +310,15 @@ export default function LandingPage() {
               <div className="absolute inset-0 rounded-2xl p-[1px] bg-gradient-to-r from-transparent via-primary/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
 
               {/* Video Placeholder - Replace with actual video embed */}
-              <div className="relative aspect-video bg-gradient-to-br from-secondary/80 to-secondary flex items-center justify-center">
-                {/* Grid Pattern Overlay */}
-                <div className="absolute inset-0 opacity-30">
-                  <div className="absolute inset-0" style={{
-                    backgroundImage: `radial-gradient(circle at 1px 1px, currentColor 1px, transparent 0)`,
-                    backgroundSize: '40px 40px',
-                  }} />
-                </div>
-
-                {/* Decorative Elements */}
-                <div className="absolute top-8 left-8 w-32 h-32 rounded-2xl border border-border/30 opacity-50" />
-                <div className="absolute bottom-8 right-8 w-24 h-24 rounded-full border border-border/30 opacity-50" />
-                <div className="absolute top-1/4 right-1/4 w-16 h-16 rounded-lg border border-border/20 opacity-30 rotate-12" />
-
-                {/* Play Button */}
-                <button className="relative z-10 group/play">
-                  {/* Pulse Rings */}
-                  <div className="absolute inset-0 rounded-full bg-primary/20 animate-ping" style={{ animationDuration: '2s' }} />
-                  <div className="absolute -inset-4 rounded-full bg-primary/10 animate-pulse" />
-
-                  {/* Button */}
-                  <div className="relative w-24 h-24 rounded-full gradient-primary flex items-center justify-center shadow-2xl group-hover/play:scale-110 transition-transform duration-300">
-                    <Play className="h-10 w-10 text-white ml-1" fill="white" />
-                  </div>
-                </button>
-
-                {/* Video Timestamp Badge */}
-                <div className="absolute bottom-6 right-6 px-3 py-1.5 rounded-lg bg-background/90 backdrop-blur-sm border border-border/50 text-sm font-medium flex items-center gap-2">
-                  <Clock className="h-4 w-4 text-muted-foreground" />
-                  <span>1:47</span>
-                </div>
-
-                {/* Demo Label */}
-                <div className="absolute top-6 left-6 px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-sm font-medium">
-                  Product Demo
-                </div>
-              </div>
+              <div className="relative aspect-video bg-black">
+  <iframe
+    src="https://www.loom.com/embed/948f2794956a4b969d1e792611e377ac?sid=1"
+    frameBorder="0"
+    allow="autoplay; fullscreen; picture-in-picture"
+    allowFullScreen
+    className="absolute inset-0 w-full h-full rounded-2xl"
+  />
+</div>
             </div>
           </div>
 
